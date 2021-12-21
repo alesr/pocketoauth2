@@ -1,6 +1,6 @@
 #POCKETOAUTH2
 
-Implements a simple authentication client towards the Pocket API, including a web server for receiving callbacks for user request token authorization.
+Implements a simple authentication client towards the Pocket API, including a http server for receiving callbacks for user request token authorization.
 
 
 ```go
