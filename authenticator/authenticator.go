@@ -98,14 +98,15 @@ func (s *Service) Authenticate(ctx context.Context) (string, string, error) {
 
 	authzURL := fmt.Sprintf(authURLTemplate, requestToken, s.redirectURI)
 
-	userAuthzChan := make(chan struct{}, 1)
-	doneChan := make(chan os.Signal, 1)
+	notifyCh := make(chan struct{}, 1)
+	quitCh := make(chan os.Signal, 1)
 
-	callbacksrv.Serve(userAuthzChan, doneChan)
+	callbacksrv.Serve(notifyCh, quitCh)
 
 	fmt.Printf("\n\nAwaiting user authorization:\n\t%s\n\n", authzURL)
 
-	<-s.userAuthzChan
+	<-notifyCh
+	quitCh <- os.Interrupt
 
 	fmt.Print("Authorization granted!\n\n")
 
