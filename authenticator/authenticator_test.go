@@ -8,20 +8,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/alesr/pocketoauth2/authzserver"
 )
 
 func ExampleService() {
-	userAuthzChan := make(chan struct{})
-
-	go func(ch chan struct{}) {
-		if err := authzserver.Serve(userAuthzChan); err != nil {
-			log.Fatal(err)
-		}
-	}(userAuthzChan)
-
-	authService, err := New("https://getpocket.com/v3", "consumerKey", "http://localhost:8081/auth/callback", userAuthzChan)
+	authService, err := New("https://getpocket.com/v3", "consumerKey", "http://localhost:8081/auth/callback")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -73,16 +63,6 @@ func TestNew_validation(t *testing.T) {
 			expectedError: ErrMissingRedirectURI,
 		},
 		{
-			name: "missing channel",
-			givenArgs: []string{
-				"host",
-				"consumerKey",
-				"redirectURI",
-			},
-			givenChan:     nil,
-			expectedError: ErrMissingUserAuthzChan,
-		},
-		{
 			name: "valid",
 			givenArgs: []string{
 				"host",
@@ -96,7 +76,7 @@ func TestNew_validation(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := New(tc.givenArgs[0], tc.givenArgs[1], tc.givenArgs[2], tc.givenChan)
+			_, err := New(tc.givenArgs[0], tc.givenArgs[1], tc.givenArgs[2])
 			if err != tc.expectedError {
 				t.Errorf("expected error %s, got %s", tc.expectedError, err)
 			}
@@ -106,7 +86,7 @@ func TestNew_validation(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	// Test that the service is created with fields populated correctly.
-	s, err := New("host", "consumerKey", "redirectURI", make(chan struct{}))
+	s, err := New("host", "consumerKey", "redirectURI")
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -125,10 +105,6 @@ func TestNew(t *testing.T) {
 
 	if s.httpCli == nil {
 		t.Error("expected httpCli to be non-nil")
-	}
-
-	if s.userAuthzChan == nil {
-		t.Error("expected userAuthzChan to be non-nil")
 	}
 
 	if s.accessToken != "" {

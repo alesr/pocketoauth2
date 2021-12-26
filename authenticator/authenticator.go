@@ -9,8 +9,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
+	"github.com/alesr/callbacksrv"
 	"github.com/alesr/pocketoauth2/httputil"
 )
 
@@ -30,10 +32,9 @@ var (
 
 	// Enumerate the possible errors that can be returned by the authenticator.
 
-	ErrMissingConsumerKey   = errors.New("missing consumer key")
-	ErrMissingHost          = errors.New("missing host")
-	ErrMissingRedirectURI   = errors.New("missing redirect URI")
-	ErrMissingUserAuthzChan = errors.New("missing user authorization channel")
+	ErrMissingConsumerKey = errors.New("missing consumer key")
+	ErrMissingHost        = errors.New("missing host")
+	ErrMissingRedirectURI = errors.New("missing redirect URI")
 )
 
 type Authenticator interface {
@@ -58,7 +59,7 @@ type Service struct {
 	username    string
 }
 
-func New(host string, consumerKey string, redirectURI string, userAuthzChan chan struct{}) (*Service, error) {
+func New(host string, consumerKey string, redirectURI string) (*Service, error) {
 	// Input Validation
 
 	if host == "" {
@@ -73,16 +74,11 @@ func New(host string, consumerKey string, redirectURI string, userAuthzChan chan
 		return nil, ErrMissingRedirectURI
 	}
 
-	if userAuthzChan == nil {
-		return nil, ErrMissingUserAuthzChan
-	}
-
 	return &Service{
-		httpCli:       httputil.BaseClient(),
-		host:          host,
-		consumerKey:   consumerKey,
-		redirectURI:   redirectURI,
-		userAuthzChan: userAuthzChan,
+		httpCli:     httputil.BaseClient(),
+		host:        host,
+		consumerKey: consumerKey,
+		redirectURI: redirectURI,
 	}, nil
 
 }
@@ -101,6 +97,11 @@ func (s *Service) Authenticate(ctx context.Context) (string, string, error) {
 	}
 
 	authzURL := fmt.Sprintf(authURLTemplate, requestToken, s.redirectURI)
+
+	userAuthzChan := make(chan struct{}, 1)
+	doneChan := make(chan os.Signal, 1)
+
+	callbacksrv.Serve(userAuthzChan, doneChan)
 
 	fmt.Printf("\n\nAwaiting user authorization:\n\t%s\n\n", authzURL)
 
