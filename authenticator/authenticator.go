@@ -101,7 +101,7 @@ func (s *Service) Authenticate(ctx context.Context) (string, string, error) {
 	notifyCh := make(chan struct{}, 1)
 	quitCh := make(chan os.Signal, 1)
 
-	callbacksrv.Serve(notifyCh, quitCh)
+	go callbacksrv.Serve(notifyCh, quitCh)
 
 	fmt.Printf("\n\nAwaiting user authorization:\n\t%s\n\n", authzURL)
 
